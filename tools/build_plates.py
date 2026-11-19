@@ -7,6 +7,7 @@ import numpy as np
 BASE = "wake-v30/Wake-v30s.3mf"          # supplies the Wave Risers PETG process/printer settings
 FULL = "wake-v30/wake_v30_flat_riser.stl"
 EXT  = "wake-v30/extensions/wake_extension.stl"
+BOTTOM = "wake-v30/extensions/wake_extension_bottom_piece.stl"
 BED, MARGIN, GAP = 256.0, 4.0, 4.0
 EXCL_X, EXCL_Y = 20.0, 30.0              # X1C front-left no-print corner is 18 x 28 mm; 2 mm extra
 
@@ -52,7 +53,7 @@ def footprint(mesh, rot):
 
 def build(name, items, out):
     """items: list of (mesh_key, cx, cy, rot90)"""
-    meshes = {"full": load_stl(FULL), "ext": load_stl(EXT)}
+    meshes = {"full": load_stl(FULL), "ext": load_stl(EXT), "bottom": load_stl(BOTTOM)}
     # checks: inside bed with margin, no overlaps with at least GAP between footprints
     boxes = []
     for k, cx, cy, rot in items:
@@ -78,7 +79,7 @@ def build(name, items, out):
     rels, res, build_items, objs, insts, cuts = [], [], [], [], [], []
     for k, (key, cx, cy, rot) in enumerate(items, start=1):
         m = meshes[key]; oid = 2 * k; cid = 2 * k - 1
-        fname = "wake_v30_flat_riser.stl" if key == "full" else "wake_extension.stl"
+        fname = {"full": "wake_v30_flat_riser.stl", "ext": "wake_extension.stl", "bottom": "wake_extension_bottom_piece.stl"}[key]
         zout.writestr(f"3D/Objects/object_{k}.model", obj_model(m, f"{k:04x}0000-81cb-4c03-9d28-80fed5dfa1dc", cid))
         rels.append(f' <Relationship Target="/3D/Objects/object_{k}.model" Id="rel-{k}" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
         res.append(f'''  <object id="{oid}" p:UUID="{k:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">
@@ -141,6 +142,8 @@ plates["plate_A_4_full"] = [("full", a_cx, y, False) for y in a_ys] + [("full", 
 b_ys = stack_ys(3, F[1], Y0, BED - MARGIN)
 e_ys = stack_ys(3, E[0], MARGIN, BED - MARGIN)
 plates["plate_B_3_full_3_ext"] = [("full", MARGIN + F[0] / 2, y, False) for y in b_ys] + [("ext", BED - MARGIN - E[1] / 2, y, True) for y in e_ys]
+# B2: same as B but the top extension is the bottom piece (one per set)
+plates["plate_B2_3_full_2_ext_1_bottom"] = plates["plate_B_3_full_3_ext"][:5] + [("bottom",) + plates["plate_B_3_full_3_ext"][5][1:]]
 # C: 9 extensions, 3 x 3, bottom row lifted above the exclusion corner
 xs = [BED / 2 + (i - 1) * (E[0] + 4.5) for i in range(3)]
 c_ys = stack_ys(3, E[1], Y0, BED - MARGIN)
