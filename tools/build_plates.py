@@ -23,14 +23,14 @@ def load_stl(fn):
     uniq, inv = np.unique(np.round(pts - c, 5), axis=0, return_inverse=True)
     return dict(verts=uniq, tris=inv.reshape(-1, 3), size=mx - mn, center=c)
 
-def obj_model(mesh, uid):
+def obj_model(mesh, uid, cid):
     vs = "\n".join(f'     <vertex x="{x:.6g}" y="{y:.6g}" z="{z:.6g}"/>' for x, y, z in mesh["verts"])
     ts = "\n".join(f'     <triangle v1="{a}" v2="{b}" v3="{c}"/>' for a, b, c in mesh["tris"])
     return f'''<?xml version="1.0" encoding="UTF-8"?>
 <model unit="millimeter" xml:lang="en-US" xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02" xmlns:BambuStudio="http://schemas.bambulab.com/package/2021" xmlns:p="http://schemas.microsoft.com/3dmanufacturing/production/2015/06" requiredextensions="p">
  <metadata name="BambuStudio:3mfVersion">1</metadata>
  <resources>
-  <object id="1" p:UUID="{uid}" type="model">
+  <object id="{cid}" p:UUID="{uid}" type="model">
    <mesh>
     <vertices>
 {vs}
@@ -76,7 +76,7 @@ def build(name, items, out):
     for k, (key, cx, cy, rot) in enumerate(items, start=1):
         m = meshes[key]; oid = 2 * k; cid = 2 * k - 1
         fname = "wake_v30_flat_riser.stl" if key == "full" else "wake_extension.stl"
-        zout.writestr(f"3D/Objects/object_{k}.model", obj_model(m, f"{k:04x}0000-81cb-4c03-9d28-80fed5dfa1dc"))
+        zout.writestr(f"3D/Objects/object_{k}.model", obj_model(m, f"{k:04x}0000-81cb-4c03-9d28-80fed5dfa1dc", cid))
         rels.append(f' <Relationship Target="/3D/Objects/object_{k}.model" Id="rel-{k}" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
         res.append(f'''  <object id="{oid}" p:UUID="{k:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">
    <components>
