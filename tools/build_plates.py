@@ -8,6 +8,7 @@ BASE = "wake-v30/Wake-v30s.3mf"          # supplies the Wave Risers PETG process
 FULL = "wake-v30/wake_v30_flat_riser.stl"
 EXT  = "wake-v30/extensions/wake_extension.stl"
 BED, MARGIN, GAP = 256.0, 4.0, 4.0
+EXCL_X, EXCL_Y = 20.0, 30.0              # X1C front-left no-print corner is 18 x 28 mm; 2 mm extra
 
 def load_stl(fn):
     b = open(fn, "rb").read()
@@ -59,6 +60,8 @@ def build(name, items, out):
         boxes.append((cx - w / 2, cx + w / 2, cy - d / 2, cy + d / 2))
     for i, (x0, x1, y0, y1) in enumerate(boxes):
         assert x0 >= MARGIN - 1e-6 and y0 >= MARGIN - 1e-6 and x1 <= BED - MARGIN + 1e-6 and y1 <= BED - MARGIN + 1e-6, (name, i, boxes[i])
+    for i, (x0, x1, y0, y1) in enumerate(boxes):
+        assert not (x0 < EXCL_X and y0 < EXCL_Y), (name, i, 'in front-left exclusion zone')
     mingap = 1e9
     for (i, a), (j, b) in itertools.combinations(enumerate(boxes), 2):
         gx = max(b[0] - a[1], a[0] - b[1]); gy = max(b[2] - a[3], a[2] - b[3])
@@ -124,22 +127,24 @@ def build(name, items, out):
     return mingap
 
 F = (175.0, 67.4); E = (79.375, 67.4)
-# three full pieces stacked along y, even spacing
-def full_stack(cx):
-    ys = [4 + 33.7 + i * (3 * 0 + 67.4 + 8) + 14.9 for i in range(3)]   # 8 mm between, centred in 256
-    return [("full", cx, y, False) for y in ys]
+Y0 = EXCL_Y                                   # keep the left column clear of the front-left exclusion corner
+def stack_ys(n, depth, y_lo, y_hi):
+    gap = (y_hi - y_lo - n * depth) / (n - 1)
+    return [y_lo + depth / 2 + i * (depth + gap) for i in range(n)]
 
 plates = {}
 # A: 3 full stacked on the right, 1 full turned 90 deg on the left
 a_cx = BED - MARGIN - F[0] / 2
-plates["plate_A_4_full"] = full_stack(a_cx) + [("full", MARGIN + F[1] / 2, BED / 2, True)]
-# B: 3 full stacked on the right, 3 extensions turned 90 deg on the left
-ys_e = [BED / 2 - (E[0] + GAP), BED / 2, BED / 2 + (E[0] + GAP)]
-plates["plate_B_3_full_3_ext"] = full_stack(a_cx) + [("ext", MARGIN + E[1] / 2 + 0.6, y, True) for y in ys_e]
-# C: 9 extensions, 3 x 3
-xs = [BED / 2 + (i - 1) * (E[0] + GAP + 0.5) for i in range(3)]
-ys = [BED / 2 + (j - 1) * (E[1] + 8) for j in range(3)]
-plates["plate_C_9_ext"] = [("ext", x, y, False) for y in ys for x in xs]
+a_ys = stack_ys(3, F[1], 20.0, BED - MARGIN)
+plates["plate_A_4_full"] = [("full", a_cx, y, False) for y in a_ys] + [("full", MARGIN + F[1] / 2, BED / 2 + 10, True)]
+# B: 3 full stacked on the left (clear of the exclusion corner), 3 extensions turned 90 deg in the strip on the right
+b_ys = stack_ys(3, F[1], Y0, BED - MARGIN)
+e_ys = stack_ys(3, E[0], MARGIN, BED - MARGIN)
+plates["plate_B_3_full_3_ext"] = [("full", MARGIN + F[0] / 2, y, False) for y in b_ys] + [("ext", BED - MARGIN - E[1] / 2, y, True) for y in e_ys]
+# C: 9 extensions, 3 x 3, bottom row lifted above the exclusion corner
+xs = [BED / 2 + (i - 1) * (E[0] + 4.5) for i in range(3)]
+c_ys = stack_ys(3, E[1], Y0, BED - MARGIN)
+plates["plate_C_9_ext"] = [("ext", x, y, False) for y in c_ys for x in xs]
 
 os.makedirs("projects", exist_ok=True)
 for name, items in plates.items():
