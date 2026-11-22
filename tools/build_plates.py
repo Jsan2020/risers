@@ -149,6 +149,9 @@ xs = [BED / 2 + (i - 1) * (E[0] + 4.5) for i in range(3)]
 c_ys = stack_ys(3, E[1], Y0, BED - MARGIN)
 plates["plate_C_9_ext"] = [("ext", x, y, False) for y in c_ys for x in xs]
 
+# D: single full riser, centred (quick test print)
+plates["plate_D_1_full"] = [("full", BED / 2, BED / 2, False)]
+
 os.makedirs("projects", exist_ok=True)
 for name, items in plates.items():
     g = build(name, items, f"projects/{name}.3mf")
