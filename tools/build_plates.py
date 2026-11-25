@@ -1,8 +1,15 @@
-"""Build Bambu Studio plate projects from STLs, reusing the profile in wake-v30/Wake-v30s.3mf.
-usage: python3 tools/build_plates.py   (run from the repo root)
+"""Build Bambu Studio plate projects from STLs, reusing the process/printer profile in wake-v30/Wake-v30s.3mf
+and baking in the stock Bambu filament preset (read from the local Bambu Studio install).
+usage: python3 tools/build_plates.py [--filament basic|matte]   (run from the repo root)
+  basic (default) -> projects/        matte -> projects/matte/
 """
-import re, struct, zipfile, math, itertools, os
+import re, struct, zipfile, math, itertools, os, json, argparse
 import numpy as np
+
+FILAMENTS = {"basic": "Bambu PETG Basic @BBL X1C", "matte": "Bambu PETG Matte @BBL X1C"}
+PRESET_DIR = os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "Bambu Studio", "resources", "profiles", "BBL", "filament")
+PRESET_META = {"type", "name", "inherits", "from", "setting_id", "instantiation", "include", "description",
+               "compatible_printers", "compatible_printers_condition", "version", "filament_id"}
 
 BASE = "wake-v30/Wake-v30s.3mf"          # supplies the Wave Risers PETG process/printer settings
 FULL = "wake-v30/wake_v30_flat_riser.stl"
@@ -47,6 +54,41 @@ def obj_model(mesh, uid, cid):
 </model>
 '''
 
+def load_preset(name):
+    """Resolve a Bambu system filament preset: inherits chain, then includes, then its own keys."""
+    idx = getattr(load_preset, "idx", None)
+    if idx is None:
+        idx = load_preset.idx = {}
+        for f in os.listdir(PRESET_DIR):
+            if f.endswith(".json"):
+                with open(os.path.join(PRESET_DIR, f), encoding="utf8") as fh:
+                    j = json.load(fh)
+                idx[j.get("name", f[:-5])] = j
+    j = idx[name]
+    out = load_preset(j["inherits"]) if j.get("inherits") else {}
+    for inc in j.get("include", []):
+        out.update({k: v for k, v in load_preset(inc).items() if k not in PRESET_META})
+    out.update(j)
+    return out
+
+def apply_filament(ps_bytes, preset_name):
+    """Overwrite the filament settings in project_settings.config with a system preset, unmodified."""
+    ps = json.loads(ps_bytes)
+    p = load_preset(preset_name)
+    variants = p.get("filament_extruder_variant", [])
+    vi = variants.index(ps["filament_extruder_variant"][0]) if ps["filament_extruder_variant"][0] in variants else 0
+    for k, v in p.items():
+        if k in PRESET_META or k not in ps or k == "filament_extruder_variant":
+            continue
+        if isinstance(v, list) and len(v) == len(variants) > 1 and len(ps[k]) == 1:
+            v = [v[vi]]                                 # one value per extruder variant: keep ours
+        ps[k] = v
+    ps["filament_settings_id"] = [preset_name]
+    ps["filament_ids"] = [p["filament_id"]]
+    ps["inherits_group"][1] = ""                        # system preset: nothing inherited, nothing changed
+    ps["different_settings_to_system"][1] = ""
+    return json.dumps(ps, indent=4).encode()
+
 def footprint(mesh, rot):
     w, d = mesh["size"][0], mesh["size"][1]
     return (d, w) if rot else (w, d)
@@ -75,7 +117,10 @@ def build(name, items, out):
     zout = zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED)
     for n in zin.namelist():
         if not drop(n):
-            zout.writestr(n, zin.read(n))
+            data = zin.read(n)
+            if n == "Metadata/project_settings.config":
+                data = apply_filament(data, FILAMENT)
+            zout.writestr(n, data)
     rels, res, build_items, objs, insts, cuts = [], [], [], [], [], []
     for k, (key, cx, cy, rot) in enumerate(items, start=1):
         m = meshes[key]; oid = 2 * k; cid = 2 * k - 1
@@ -152,7 +197,13 @@ plates["plate_C_9_ext"] = [("ext", x, y, False) for y in c_ys for x in xs]
 # D: single full riser, centred (quick test print)
 plates["plate_D_1_full"] = [("full", BED / 2, BED / 2, False)]
 
-os.makedirs("projects", exist_ok=True)
+ap = argparse.ArgumentParser()
+ap.add_argument("--filament", choices=FILAMENTS, default="basic")
+args = ap.parse_args()
+FILAMENT = FILAMENTS[args.filament]
+outdir = "projects" if args.filament == "basic" else f"projects/{args.filament}"
+os.makedirs(outdir, exist_ok=True)
+print(f"filament: {FILAMENT} -> {outdir}/")
 for name, items in plates.items():
-    g = build(name, items, f"projects/{name}.3mf")
+    g = build(name, items, f"{outdir}/{name}.3mf")
     print(f"{name}: {len(items)} parts, min gap between parts {g:.1f} mm")

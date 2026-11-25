@@ -1,6 +1,6 @@
 # Print plan: one full set (39 full risers + 13 extensions)
 
-Parts per plate are in `projects/`. Times are Bambu Studio estimates (Wave Risers PETG, Generic PETG filament, 0.12 mm).
+Parts per plate are in `projects/`. Times and grams are Bambu Studio estimates from the old Generic PETG profile (Wave Risers PETG, 0.12 mm). Re-slice to update them for Bambu PETG Basic / Matte (Matte weighs about 10% more).
 
 | Plate | Contents | X1C | A1 (timelapse on) | Filament |
 |---|---|---|---|---|
