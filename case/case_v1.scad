@@ -76,7 +76,7 @@ tab_xs = [width / 4, 3 * width / 4];     // two tabs, at the quarter points (ful
 // engraved logo and version on the front face, in the solid strip along the free edge, either side of the slots
 engrave      = true;
 brand_text   = "BlueBytes";
-version_text = "Wake v30";
+version_text = "Bedrock v1";
 tag_size     = 3.5;
 tag_depth    = 0.5;
 tag_font     = "Liberation Sans:style=Bold";

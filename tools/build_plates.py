@@ -1,4 +1,4 @@
-"""Build Bambu Studio plate projects from STLs, reusing the process/printer profile in wake-v30/Wake-v30s.3mf
+"""Build Bambu Studio plate projects from STLs, reusing the process/printer profile in print-profiles/plate_settings_base.3mf
 and baking in the stock Bambu filament preset (read from the local Bambu Studio install).
 usage: python3 tools/build_plates.py [--filament basic|matte]   (run from the repo root)
   basic (default) -> projects/        matte -> projects/matte/
@@ -11,10 +11,10 @@ PRESET_DIR = os.path.join(os.environ.get("ProgramFiles", r"C:\Program Files"), "
 PRESET_META = {"type", "name", "inherits", "from", "setting_id", "instantiation", "include", "description",
                "compatible_printers", "compatible_printers_condition", "version", "filament_id"}
 
-BASE = "wake-v30/Wake-v30s.3mf"          # supplies the Wave Risers PETG process/printer settings
-FULL = "wake-v30/wake_v30_flat_riser.stl"
-EXT  = "wake-v30/extensions/wake_extension.stl"
-BOTTOM = "wake-v30/extensions/wake_extension_bottom_piece.stl"
+BASE = "print-profiles/plate_settings_base.3mf"   # supplies the Wave Risers PETG process/printer settings (its models are ignored)
+FULL = "bedrock-v1/bedrock_v1_flat_riser.stl"
+EXT  = "bedrock-v1/extensions/bedrock_extension.stl"
+BOTTOM = "bedrock-v1/extensions/bedrock_extension_bottom_piece.stl"
 BED, MARGIN, GAP = 256.0, 4.0, 4.0
 EXCL_X, EXCL_Y = 20.0, 30.0              # X1C front-left no-print corner is 18 x 28 mm; 2 mm extra
 
@@ -124,7 +124,7 @@ def build(name, items, out):
     rels, res, build_items, objs, insts, cuts = [], [], [], [], [], []
     for k, (key, cx, cy, rot) in enumerate(items, start=1):
         m = meshes[key]; oid = 2 * k; cid = 2 * k - 1
-        fname = {"full": "wake_v30_flat_riser.stl", "ext": "wake_extension.stl", "bottom": "wake_extension_bottom_piece.stl"}[key]
+        fname = {k: os.path.basename(p) for k, p in (("full", FULL), ("ext", EXT), ("bottom", BOTTOM))}[key]
         zout.writestr(f"3D/Objects/object_{k}.model", obj_model(m, f"{k:04x}0000-81cb-4c03-9d28-80fed5dfa1dc", cid))
         rels.append(f' <Relationship Target="/3D/Objects/object_{k}.model" Id="rel-{k}" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/>')
         res.append(f'''  <object id="{oid}" p:UUID="{k:08x}-61cb-4c03-9d28-80fed5dfa1dc" type="model">

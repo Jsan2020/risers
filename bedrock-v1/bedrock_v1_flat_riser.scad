@@ -1,14 +1,15 @@
-// Wake flat v2: built on the v6 design. One-piece L riser printed flat, plate on the bed, lip standing up.
+// Bedrock v1: generic riser, same part as Wake v30 (branch "Wake") with a B corner mark and "Bedrock v1" engraved.
+// Wake flat v2 lineage: built on the v6 design. One-piece L riser printed flat, plate on the bed, lip standing up.
 // Kept exactly from v6: plate size (65.4 mm deep x width), 2.24 mm plate (2 + 0.24 extra back layers),
-//   hex size/gap/borders/grid positions, the small W, and the lip size (2 mm thick, 20 mm deep from the front face).
+//   hex size/gap/borders/grid positions, and the lip size (2 mm thick, 20 mm deep from the front face).
 // New: wall tabs on the lip top that rest by gravity in slots near the free edge of the next plate.
 // No ridges, channels or bands.
 //
 // Axes: x = width, y = plate depth (y=0 is the lip end of the plate, v6's z_bot end), z = up (plate front face up).
 // The x axis is mirrored relative to v6's panel coordinates so the part is the same physical part, not a mirror image.
 
-// Extension piece: exactly 3 1/8 in wide, one tab/slot at centre, no W.
-width       = 3.125 * 25.4;                // 79.375 mm
+half_length = false;                      // true = half-length prototype (87.5 mm)
+width       = half_length ? 87.5 : 175;
 
 // v6 plate: back_height 70.5 - panel_top_trim 1.0 - boss_h 4.1
 panel_h  = 65.4;
@@ -28,16 +29,19 @@ border_x   = 4;
 border_top = 6;
 band_h     = 5;                           // v6 band_v 2 + ramp_h 3: hex area starts this far from the lip end
 
-// small W, same as v6: one hex at the far corner, max x and max v6-z
-small_w_on     = false;
-small_w_w      = 0.85;
+// corner mark: letters left standing in one hex at the far corner (max x, max v6-z)
+corner_mark    = "B";                     // "B" | "BB" | "W" (Wake's) | "" for none
+small_w_w      = 0.85;                    // W sizes, as fractions of hex_size (same as v6)
 small_w_h      = 0.62;
 small_w_stroke = 2.0;
 letter_flip    = true;
-
-// bottom piece only: round the free-edge corner at max x (bottom right) for the case's rounded inner corner
-bottom_piece  = false;
-corner_cut_r  = 6.35;                     // 1/4 in
+hex_flats = hex_size * cos(30);           // hex hole height, flat to flat (12.99)
+b_h       = hex_flats + 0.6;              // the Bs run 0.3 mm into the hex's top and bottom edges, which hold them in place
+b_w       = 8.0;                          // single B: width, stroke (mm)
+b_stroke  = 1.8;
+bb_w      = 4.8;                          // BB: each B
+bb_stroke = 1.4;
+bb_gap    = 0.8;                          // space between the two Bs
 
 // tabs on the lip top, slots in the plate
 tab_len     = 22;
@@ -53,14 +57,14 @@ ramp_run_x = 3.0;                         // flare past each end, gentler lead-i
 stack_step = 3.6;
 assert(stack_step >= wall + fillet_in, "stack_step too small to clear the lip wall and fillet");
 
-tab_xs = [width / 2];                     // single tab, centred
+tab_xs = [width / 4, 3 * width / 4];     // two tabs, at the quarter points (full width: 43.75 and 131.25)
 left_end  = tab_xs[0] - (tab_len / 2 + tab_clear);   // free stretches either side of the slots, where the text goes
-right_beg = tab_xs[0] + (tab_len / 2 + tab_clear);
+right_beg = tab_xs[1] + (tab_len / 2 + tab_clear);
 
 // engraved logo and version on the front face, in the solid strip along the free edge, either side of the slots
-engrave      = false;
+engrave      = true;
 brand_text   = "BlueBytes";
-version_text = "Wake v30";
+version_text = "Bedrock v1";
 tag_size     = 3.5;
 tag_depth    = 0.7;
 tag_font     = "Liberation Sans:style=Bold";
@@ -91,7 +95,42 @@ module w_shape2d(lw, lh, stroke) {
     }
 }
 
-// the v6 hex pattern as a 2D cut; the cell grid is symmetric in x, only the W cell is mirrored
+// round-ended strokes through a list of points, same look as the W
+module stroke_path(pts, s) {
+    for (i = [0 : len(pts) - 2]) hull() {
+        translate(pts[i]) circle(d = s, $fn = 24);
+        translate(pts[i + 1]) circle(d = s, $fn = 24);
+    }
+}
+function arc_pts(c, rx, ry, a0, a1, n = 16) = [for (i = [0 : n]) let (a = a0 + (a1 - a0) * i / n) c + [rx * cos(a), ry * sin(a)]];
+
+// upright B centred on the origin, as stroke centre lines. Its top and bottom bars must reach into the hex frame,
+// otherwise the letter is a loose island in the hole. Bowls are round where there is room, squeezed to ellipses when narrow.
+module b_shape2d(h, w, s) {
+    yt = h / 2 - s / 2;                   // top and bottom bar centre lines
+    ym = 0.04 * h;                        // middle bar, a touch above centre
+    xs = -w / 2 + s / 2;                  // stem centre line
+    xrb = w / 2 - s / 2;                  // bottom bowl reaches the full width
+    xrt = xrb - 0.1 * w;                  // top bowl a little narrower
+    ryt = (yt - ym) / 2;  ryb = (ym + yt) / 2;
+    rxt = min(ryt, xrt - xs);  rxb = min(ryb, xrb - xs);
+    stroke_path([[xs, -yt], [xs, yt]], s);
+    stroke_path(concat([[xs, yt]], arc_pts([xrt - rxt, ym + ryt], rxt, ryt, 90, -90), [[xs, ym]]), s);
+    stroke_path(concat([[xs, ym]], arc_pts([xrb - rxb, ym - ryb], rxb, ryb, 90, -90), [[xs, -yt]]), s);
+}
+
+// the mark, in plate coordinates. Plate y runs opposite to reading direction (the engraved text is turned 180 deg
+// for the same reason), so letters are turned 180 deg; the W is symmetric, so v6's vertical flip did the same job.
+module mark2d() {
+    if (corner_mark == "W")
+        w_shape2d(hex_size * small_w_w, hex_size * small_w_h, small_w_stroke);
+    else if (corner_mark == "B")
+        rotate(180) b_shape2d(b_h, b_w, b_stroke);
+    else if (corner_mark == "BB")
+        rotate(180) for (dx = [-1, 1]) translate([dx * (bb_w + bb_gap) / 2, 0]) b_shape2d(b_h, bb_w, bb_stroke);
+}
+
+// the v6 hex pattern as a 2D cut; the cell grid is symmetric in x, only the mark cell is mirrored
 module hex_cut2d(w, h) {
     cc = corner_cell(w, h);
     difference() {
@@ -99,8 +138,7 @@ module hex_cut2d(w, h) {
             for (c = cells(w, h)) translate(c) circle(d = hex_size, $fn = 6);
             square([w, h]);
         }
-        if (small_w_on)
-            translate([w - cc[0], cc[1]]) w_shape2d(hex_size * small_w_w, hex_size * small_w_h, small_w_stroke);
+        translate([w - cc[0], cc[1]]) intersection() { mark2d(); circle(d = hex_size + 2, $fn = 6); }   // keep the mark in its own hex, but let it reach ~0.9 mm into the frame so it stays attached
     }
 }
 
@@ -152,21 +190,12 @@ module tag_text(txt, x_pos) {
             text(txt, size = tag_size, font = tag_font, halign = "center", valign = "baseline");
 }
 
-module corner_cutter() {
-    translate([width - corner_cut_r, plate_d - corner_cut_r, -1]) linear_extrude(plate_t + 2)
-        difference() {
-            square([corner_cut_r + 1, corner_cut_r + 1]);
-            circle(r = corner_cut_r, $fn = 64);
-        }
-}
-
 module riser() {
     difference() {
         union() { body(); tabs(); }
         translate([border_x, band_h, -1]) linear_extrude(plate_t + 2)
             hex_cut2d(width - 2 * border_x, panel_h - band_h - border_top);
         slots();
-        if (bottom_piece) corner_cutter();
         if (engrave) {
             tag_text(brand_text, (border_x + left_end) / 2);
             tag_text(version_text, (right_beg + width - border_x) / 2);

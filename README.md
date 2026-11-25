@@ -2,13 +2,19 @@
 
 OpenSCAD designs for 3D-printed Pokemon card risers (Bambu Lab X1 Carbon, 0.4 mm nozzle, 0.12 mm layers).
 
-## Current design: Wake v30 (`wake-v30/`)
-- `wake_v30_flat_riser.scad` / `.stl`: one-piece flat riser, 175 mm wide. Plate on the bed, lip standing up, two wall tabs resting in slots of the riser below.
-- `Wake-v30s.3mf`: latest Bambu Studio project.
+## Branches
+- `main`: generic risers (Bedrock).
+- `Wake`: the Wake set (W corner mark, "Wake v30" engraving), kept as it was printed.
+
+## Current design: Bedrock v1 (`bedrock-v1/`)
+Same part as Wake v30, with a B corner mark instead of the W and "Bedrock v1" engraved instead of "Wake v30".
+- `bedrock_v1_flat_riser.scad` / `.stl`: one-piece flat riser, 175 mm wide. Plate on the bed, lip standing up, two wall tabs resting in slots of the riser below.
+  `corner_mark` picks the letters in the corner hex: `"B"` (default), `"BB"`, `"W"` or `""`.
+- `variants/bedrock_v1_flat_riser_BB.stl`: the same riser with BB, for a test print.
 - `iron_modifiers.stl`: boxes marking the engraved text for the ironing modifier.
-- `extensions/`: 3 1/8 in (79.375 mm) wide pieces, one tab/slot, no W, no engraving.
-  - `wake_extension.scad` / `.stl`: standard extension. Set `bottom_piece = true` for the bottom piece.
-  - `wake_extension_bottom_piece.scad` / `.stl`: bottom piece, 1/4 in radius on the free-edge corner at max x, to clear the case's rounded inner corner. Print one per set.
+- `extensions/`: 3 1/8 in (79.375 mm) wide pieces, one tab/slot, no corner mark, no engraving.
+  - `bedrock_extension.scad` / `.stl`: standard extension. Set `bottom_piece = true` for the bottom piece.
+  - `bedrock_extension_bottom_piece.scad` / `.stl`: bottom piece, 1/4 in radius on the free-edge corner at max x, to clear the case's rounded inner corner. Print one per set.
 
 ## Plate projects (`projects/`)
 Bambu Studio projects for the X1C: Wave Risers PETG process profile plus the stock **Bambu PETG Basic** filament preset. `projects/matte/` holds the same plates with stock **Bambu PETG Matte**.
@@ -22,7 +28,7 @@ Plan for a set of 39 full + 13 extensions: 6 x plate A + 5 x plate B (11 plates)
 ## Other
 - `case/`: case v1, side-sliding sleeve for a shingled stack.
 - `hinge-poc/`: print-in-place hinge experiment and notes.
-- `print-profiles/`: older Polymaker PETG profiles (not used; see Filament below).
+- `print-profiles/`: `plate_settings_base.3mf` (the Wake v30 slicer project; the plate builder takes its process and printer settings) and older Polymaker PETG profiles (not used; see Filament below).
 - `history/`: milestone designs, oldest first (card riser, split, modular, v5/v6, first flat).
 
 Browser-download duplicates like `(1)`, `(2)` were left out on purpose. Commit dates follow the original file modified times.

@@ -36,7 +36,7 @@ small_w_stroke = 2.0;
 letter_flip    = true;
 
 // bottom piece only: round the free-edge corner at max x (bottom right) for the case's rounded inner corner
-bottom_piece  = true; 
+bottom_piece  = false;
 corner_cut_r  = 6.35;                     // 1/4 in
 
 // tabs on the lip top, slots in the plate
@@ -60,7 +60,7 @@ right_beg = tab_xs[0] + (tab_len / 2 + tab_clear);
 // engraved logo and version on the front face, in the solid strip along the free edge, either side of the slots
 engrave      = false;
 brand_text   = "BlueBytes";
-version_text = "Wake v30";
+version_text = "Bedrock v1";
 tag_size     = 3.5;
 tag_depth    = 0.7;
 tag_font     = "Liberation Sans:style=Bold";

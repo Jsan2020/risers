@@ -7,8 +7,8 @@
 // Axes: x = width, y = plate depth (y=0 is the lip end of the plate, v6's z_bot end), z = up (plate front face up).
 // The x axis is mirrored relative to v6's panel coordinates so the part is the same physical part, not a mirror image.
 
-half_length = false;                      // true = half-length prototype (87.5 mm)
-width       = half_length ? 87.5 : 175;
+// Extension piece: exactly 3 1/8 in wide, one tab/slot at centre, no W.
+width       = 3.125 * 25.4;                // 79.375 mm
 
 // v6 plate: back_height 70.5 - panel_top_trim 1.0 - boss_h 4.1
 panel_h  = 65.4;
@@ -29,11 +29,15 @@ border_top = 6;
 band_h     = 5;                           // v6 band_v 2 + ramp_h 3: hex area starts this far from the lip end
 
 // small W, same as v6: one hex at the far corner, max x and max v6-z
-small_w_on     = true;
+small_w_on     = false;
 small_w_w      = 0.85;
 small_w_h      = 0.62;
 small_w_stroke = 2.0;
 letter_flip    = true;
+
+// bottom piece only: round the free-edge corner at max x (bottom right) for the case's rounded inner corner
+bottom_piece  = true; 
+corner_cut_r  = 6.35;                     // 1/4 in
 
 // tabs on the lip top, slots in the plate
 tab_len     = 22;
@@ -49,14 +53,14 @@ ramp_run_x = 3.0;                         // flare past each end, gentler lead-i
 stack_step = 3.6;
 assert(stack_step >= wall + fillet_in, "stack_step too small to clear the lip wall and fillet");
 
-tab_xs = [width / 4, 3 * width / 4];     // two tabs, at the quarter points (full width: 43.75 and 131.25)
+tab_xs = [width / 2];                     // single tab, centred
 left_end  = tab_xs[0] - (tab_len / 2 + tab_clear);   // free stretches either side of the slots, where the text goes
-right_beg = tab_xs[1] + (tab_len / 2 + tab_clear);
+right_beg = tab_xs[0] + (tab_len / 2 + tab_clear);
 
 // engraved logo and version on the front face, in the solid strip along the free edge, either side of the slots
-engrave      = true;
+engrave      = false;
 brand_text   = "BlueBytes";
-version_text = "Wake v30";
+version_text = "Bedrock v1";
 tag_size     = 3.5;
 tag_depth    = 0.7;
 tag_font     = "Liberation Sans:style=Bold";
@@ -148,12 +152,21 @@ module tag_text(txt, x_pos) {
             text(txt, size = tag_size, font = tag_font, halign = "center", valign = "baseline");
 }
 
+module corner_cutter() {
+    translate([width - corner_cut_r, plate_d - corner_cut_r, -1]) linear_extrude(plate_t + 2)
+        difference() {
+            square([corner_cut_r + 1, corner_cut_r + 1]);
+            circle(r = corner_cut_r, $fn = 64);
+        }
+}
+
 module riser() {
     difference() {
         union() { body(); tabs(); }
         translate([border_x, band_h, -1]) linear_extrude(plate_t + 2)
             hex_cut2d(width - 2 * border_x, panel_h - band_h - border_top);
         slots();
+        if (bottom_piece) corner_cutter();
         if (engrave) {
             tag_text(brand_text, (border_x + left_end) / 2);
             tag_text(version_text, (right_beg + width - border_x) / 2);
