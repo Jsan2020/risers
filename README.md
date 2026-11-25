@@ -7,10 +7,9 @@ OpenSCAD designs for 3D-printed Pokemon card risers (Bambu Lab X1 Carbon, 0.4 mm
 - `Wake`: the Wake set (W corner mark, "Wake v30" engraving), kept as it was printed.
 
 ## Current design: Bedrock v1 (`bedrock-v1/`)
-Same part as Wake v30, with a B corner mark instead of the W and "Bedrock v1" engraved instead of "Wake v30".
+Same part as Wake v30, with no corner mark (the W hex is a plain open hex) and "Bedrock v1" engraved instead of "Wake v30".
 - `bedrock_v1_flat_riser.scad` / `.stl`: one-piece flat riser, 175 mm wide. Plate on the bed, lip standing up, two wall tabs resting in slots of the riser below.
-  `corner_mark` picks the letters in the corner hex: `"B"` (default), `"BB"`, `"W"` or `""`.
-- `variants/bedrock_v1_flat_riser_BB.stl`: the same riser with BB, for a test print.
+  `corner_mark` can put letters in the corner hex: `""` (default, none), `"B"`, `"BB"` or `"W"`.
 - `iron_modifiers.stl`: boxes marking the engraved text for the ironing modifier.
 - `extensions/`: 3 1/8 in (79.375 mm) wide pieces, one tab/slot, no corner mark, no engraving.
   - `bedrock_extension.scad` / `.stl`: standard extension. Set `bottom_piece = true` for the bottom piece.

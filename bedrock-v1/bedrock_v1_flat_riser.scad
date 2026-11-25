@@ -1,4 +1,4 @@
-// Bedrock v1: generic riser, same part as Wake v30 (branch "Wake") with a B corner mark and "Bedrock v1" engraved.
+// Bedrock v1: generic riser, same part as Wake v30 (branch "Wake") with no corner mark and "Bedrock v1" engraved.
 // Wake flat v2 lineage: built on the v6 design. One-piece L riser printed flat, plate on the bed, lip standing up.
 // Kept exactly from v6: plate size (65.4 mm deep x width), 2.24 mm plate (2 + 0.24 extra back layers),
 //   hex size/gap/borders/grid positions, and the lip size (2 mm thick, 20 mm deep from the front face).
@@ -30,7 +30,7 @@ border_top = 6;
 band_h     = 5;                           // v6 band_v 2 + ramp_h 3: hex area starts this far from the lip end
 
 // corner mark: letters left standing in one hex at the far corner (max x, max v6-z)
-corner_mark    = "B";                     // "B" | "BB" | "W" (Wake's) | "" for none
+corner_mark    = "";                      // "" (none, plain hex) | "B" | "BB" | "W" (Wake's)
 small_w_w      = 0.85;                    // W sizes, as fractions of hex_size (same as v6)
 small_w_h      = 0.62;
 small_w_stroke = 2.0;
